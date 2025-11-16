@@ -21,9 +21,11 @@
 
 <div align="center">
 
-<iframe width="560" height="315" src="https://www.youtube.com/embed/V06IU46c-iU?si=FCQMbnhXeDB_V33V" title="YouTube video player" frameborder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share" referrerpolicy="strict-origin-when-cross-origin" allowfullscreen></iframe>
+[![BugHunter Demo Video](https://img.youtube.com/vi/V06IU46c-iU/maxresdefault.jpg)](https://youtu.be/V06IU46c-iU?si=B9_u3I3pVhCh5iYy)
 
-*Watch BugHunter in action - See how AI transforms code analysis*
+*🎬 Click the image above to watch BugHunter in action - See how AI transforms code analysis*
+
+**[▶️ Watch Demo Video](https://youtu.be/V06IU46c-iU?si=B9_u3I3pVhCh5iYy)**
 
 </div>
 
