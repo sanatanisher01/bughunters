@@ -42,12 +42,18 @@ def signup_view(request):
                 reverse('verify_email') + f'?token={token.token}'
             )
             
-            if EmailService.send_verification_email(user, verification_url):
-                messages.success(request, 'Registration successful! Please check your email to verify your account.')
+            try:
+                # Try to send email but don't block on it
+                email_sent = EmailService.send_verification_email(user, verification_url)
+                if email_sent:
+                    messages.success(request, 'Registration successful! Please check your email to verify your account.')
+                else:
+                    messages.success(request, 'Registration successful! However, there was an issue sending the verification email. Please contact support.')
                 return redirect('login')
-            else:
-                user.delete()  # Clean up if email fails
-                messages.error(request, 'Failed to send verification email. Please try again.')
+            except Exception as e:
+                # Don't delete user if email fails, just show message
+                messages.success(request, 'Registration successful! However, there was an issue sending the verification email. Please contact support.')
+                return redirect('login')
     else:
         form = SignUpForm()
     

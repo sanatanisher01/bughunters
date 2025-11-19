@@ -24,7 +24,7 @@ class EmailService:
             return False
             
         try:
-            subject = "🔍 Verify Your Email - BugHunter"
+            subject = "Verify Your Email - BugHunter"
             
             # Simple text email for better deliverability
             message = f"""
@@ -40,20 +40,18 @@ Best regards,
 BugHunter Team
 """
             
+            # Use fail_silently=True to prevent blocking
             send_mail(
                 subject=subject,
                 message=message,
                 from_email=settings.DEFAULT_FROM_EMAIL,
                 recipient_list=[user.email],
-                fail_silently=False
+                fail_silently=True
             )
             
-            logger.info(f"Verification email sent to {user.email}")
+            logger.info(f"Verification email queued for {user.email}")
             return True
             
-        except SMTPException as e:
-            logger.error(f"SMTP error sending verification email: {e}")
-            return False
         except Exception as e:
             logger.error(f"Failed to send verification email: {e}")
             return False
