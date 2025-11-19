@@ -759,6 +759,152 @@ document.addEventListener('DOMContentLoaded', function() {
         });
     }
 });
+
+// Export dropdown functionality
+const exportDropdown = document.getElementById('exportDropdown');
+const exportMenu = document.getElementById('exportMenu');
+
+if (exportDropdown && exportMenu) {
+    exportDropdown.addEventListener('click', function(e) {
+        e.stopPropagation();
+        exportMenu.style.display = exportMenu.style.display === 'none' ? 'block' : 'none';
+    });
+    
+    // Close dropdown when clicking outside
+    document.addEventListener('click', function() {
+        exportMenu.style.display = 'none';
+    });
+    
+    // Dropdown item hover effects
+    const dropdownItems = document.querySelectorAll('.dropdown-item');
+    dropdownItems.forEach(item => {
+        item.addEventListener('mouseenter', function() {
+            this.style.background = 'var(--bg-soft)';
+        });
+        item.addEventListener('mouseleave', function() {
+            this.style.background = 'none';
+        });
+    });
+}
+
+// Download report function
+function downloadReport(type) {
+    exportMenu.style.display = 'none';
+    
+    if (type === 'current') {
+        // Get currently selected file
+        const activeFile = document.querySelector('.file-item.active');
+        if (activeFile) {
+            const fileName = activeFile.querySelector('.file-name').textContent;
+            const fileId = activeFile.dataset.file;
+            
+            // Create and download current file report
+            generateFileReport(fileName, fileId);
+        } else {
+            alert('Please select a file first');
+        }
+    } else {
+        // Download complete analysis
+        generateCompleteReport();
+    }
+}
+
+function generateFileReport(fileName, fileId) {
+    const fileFindings = document.querySelector(`.file-findings[data-file="${fileId}"]`);
+    if (!fileFindings) return;
+    
+    let reportContent = `BugHunter Analysis Report - ${fileName}\n`;
+    reportContent += `Generated: ${new Date().toLocaleString()}\n`;
+    reportContent += `${'='.repeat(50)}\n\n`;
+    
+    // Extract findings from the selected file
+    const categories = fileFindings.querySelectorAll('.finding-category');
+    categories.forEach(category => {
+        const categoryTitle = category.querySelector('.category-title').textContent;
+        const findings = category.querySelectorAll('.finding-item');
+        
+        if (findings.length > 0) {
+            reportContent += `${categoryTitle.toUpperCase()}\n`;
+            reportContent += `${'-'.repeat(categoryTitle.length)}\n`;
+            
+            findings.forEach((finding, index) => {
+                const title = finding.querySelector('.finding-title').textContent;
+                const description = finding.querySelector('.finding-description').textContent;
+                const severity = finding.querySelector('.severity-badge')?.textContent || 'N/A';
+                
+                reportContent += `${index + 1}. ${title}\n`;
+                reportContent += `   Severity: ${severity}\n`;
+                reportContent += `   Description: ${description}\n\n`;
+            });
+        }
+    });
+    
+    downloadTextFile(reportContent, `bughunter-${fileName.replace(/[^a-zA-Z0-9]/g, '_')}-report.txt`);
+}
+
+function generateCompleteReport() {
+    let reportContent = `BugHunter Complete Analysis Report\n`;
+    reportContent += `Generated: ${new Date().toLocaleString()}\n`;
+    reportContent += `${'='.repeat(50)}\n\n`;
+    
+    // Add summary
+    const summaryCards = document.querySelectorAll('.summary-card');
+    reportContent += `SUMMARY\n`;
+    reportContent += `-------\n`;
+    summaryCards.forEach(card => {
+        const number = card.querySelector('.summary-number').textContent;
+        const label = card.querySelector('.summary-label').textContent;
+        reportContent += `${label}: ${number}\n`;
+    });
+    reportContent += `\n`;
+    
+    // Add all file findings
+    const allFileFindings = document.querySelectorAll('.file-findings');
+    allFileFindings.forEach((fileFindings, fileIndex) => {
+        const fileItem = document.querySelector(`[data-file="${fileIndex + 1}"]`);
+        const fileName = fileItem?.querySelector('.file-name').textContent || `File ${fileIndex + 1}`;
+        
+        reportContent += `FILE: ${fileName}\n`;
+        reportContent += `${'='.repeat(fileName.length + 6)}\n`;
+        
+        const categories = fileFindings.querySelectorAll('.finding-category');
+        categories.forEach(category => {
+            const categoryTitle = category.querySelector('.category-title').textContent;
+            const findings = category.querySelectorAll('.finding-item');
+            
+            if (findings.length > 0) {
+                reportContent += `\n${categoryTitle.toUpperCase()}\n`;
+                reportContent += `${'-'.repeat(categoryTitle.length)}\n`;
+                
+                findings.forEach((finding, index) => {
+                    const title = finding.querySelector('.finding-title').textContent;
+                    const description = finding.querySelector('.finding-description').textContent;
+                    const severity = finding.querySelector('.severity-badge')?.textContent || 'N/A';
+                    
+                    reportContent += `${index + 1}. ${title}\n`;
+                    reportContent += `   Severity: ${severity}\n`;
+                    reportContent += `   Description: ${description}\n\n`;
+                });
+            }
+        });
+        
+        reportContent += `\n`;
+    });
+    
+    downloadTextFile(reportContent, `bughunter-complete-analysis-${new Date().toISOString().split('T')[0]}.txt`);
+}
+
+function downloadTextFile(content, filename) {
+    const blob = new Blob([content], { type: 'text/plain' });
+    const url = window.URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = filename;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    window.URL.revokeObjectURL(url);
+}
 </script>
 {% endblock %}
 
@@ -1096,9 +1242,19 @@ document.addEventListener('DOMContentLoaded', function() {
             <a href="{% url 'dashboard' %}" class="btn btn-secondary btn-large">
                 📈 Dashboard
             </a>
-            <button onclick="window.print()" class="btn btn-secondary btn-large">
-                🖨️ Export Report
-            </button>
+            <div class="dropdown-container" style="position: relative; display: inline-block;">
+                <button class="btn btn-secondary btn-large dropdown-toggle" id="exportDropdown">
+                    📥 Download Report ▼
+                </button>
+                <div class="dropdown-menu" id="exportMenu" style="display: none; position: absolute; top: 100%; left: 0; background: var(--bg-card); border: 1px solid var(--border-subtle); border-radius: var(--radius-md); box-shadow: var(--shadow-medium); z-index: 1000; min-width: 200px; margin-top: 4px;">
+                    <button class="dropdown-item" onclick="downloadReport('current')" style="display: block; width: 100%; padding: var(--space-sm) var(--space-md); background: none; border: none; text-align: left; color: var(--text-primary); cursor: pointer; transition: background var(--transition-fast);">
+                        📄 Current File Only
+                    </button>
+                    <button class="dropdown-item" onclick="downloadReport('complete')" style="display: block; width: 100%; padding: var(--space-sm) var(--space-md); background: none; border: none; text-align: left; color: var(--text-primary); cursor: pointer; transition: background var(--transition-fast);">
+                        📊 Complete Analysis
+                    </button>
+                </div>
+            </div>
         </div>
     </div>
 </div>
