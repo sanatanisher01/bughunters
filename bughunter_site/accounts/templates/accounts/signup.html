@@ -445,6 +445,46 @@ document.addEventListener('DOMContentLoaded', function() {
     const passwordInput = document.querySelector('input[name="password1"]');
     const confirmPasswordInput = document.querySelector('input[name="password2"]');
     
+    // Enter key navigation between fields
+    const formInputs = Array.from(inputs);
+    
+    inputs.forEach((input, index) => {
+        input.addEventListener('keydown', function(e) {
+            if (e.key === 'Enter') {
+                e.preventDefault();
+                
+                // Find next empty field or submit if all filled
+                let nextIndex = -1;
+                for (let i = index + 1; i < formInputs.length; i++) {
+                    if (!formInputs[i].value.trim()) {
+                        nextIndex = i;
+                        break;
+                    }
+                }
+                
+                // If no empty field found, check if all fields are filled
+                if (nextIndex === -1) {
+                    const allFilled = formInputs.every(inp => inp.value.trim());
+                    if (allFilled) {
+                        // Submit form
+                        form.submit();
+                    } else {
+                        // Find first empty field from beginning
+                        for (let i = 0; i < formInputs.length; i++) {
+                            if (!formInputs[i].value.trim()) {
+                                formInputs[i].focus();
+                                break;
+                            }
+                        }
+                    }
+                } else {
+                    // Focus next empty field
+                    formInputs[nextIndex].focus();
+                }
+            }
+        });
+    });
+    
     // Add floating label behavior
     inputs.forEach(input => {
         if (input.value) {
