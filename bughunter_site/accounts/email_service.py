@@ -1,39 +1,59 @@
-from django.core.mail import EmailMultiAlternatives
+from django.core.mail import EmailMultiAlternatives, send_mail
 from django.template.loader import render_to_string
 from django.conf import settings
 from django.utils.html import strip_tags
+from smtplib import SMTPException
 import logging
 
 logger = logging.getLogger(__name__)
 
 class EmailService:
     @staticmethod
+    def _validate_email_config():
+        """Validate email configuration"""
+        if not all([settings.EMAIL_HOST, settings.EMAIL_HOST_USER, settings.EMAIL_HOST_PASSWORD]):
+            logger.error("Email configuration incomplete")
+            return False
+        return True
+    
+    @staticmethod
     def send_verification_email(user, verification_url):
         """Send email verification email"""
+        if not EmailService._validate_email_config():
+            logger.error("Email configuration invalid, cannot send verification email")
+            return False
+            
         try:
             subject = "🔍 Verify Your Email - BugHunter"
             
-            context = {
-                'user': user,
-                'verification_url': verification_url,
-                'site_url': settings.SITE_URL if hasattr(settings, 'SITE_URL') else 'http://localhost:8000'
-            }
+            # Simple text email for better deliverability
+            message = f"""
+Hi {user.name or user.username},
+
+Welcome to BugHunter! Please verify your email address by clicking the link below:
+
+{verification_url}
+
+If you didn't create this account, please ignore this email.
+
+Best regards,
+BugHunter Team
+"""
             
-            html_content = render_to_string('accounts/emails/email_verification.html', context)
-            text_content = strip_tags(html_content)
-            
-            msg = EmailMultiAlternatives(
+            send_mail(
                 subject=subject,
-                body=text_content,
+                message=message,
                 from_email=settings.DEFAULT_FROM_EMAIL,
-                to=[user.email]
+                recipient_list=[user.email],
+                fail_silently=False
             )
-            msg.attach_alternative(html_content, "text/html")
-            msg.send()
             
             logger.info(f"Verification email sent to {user.email}")
             return True
             
+        except SMTPException as e:
+            logger.error(f"SMTP error sending verification email: {e}")
+            return False
         except Exception as e:
             logger.error(f"Failed to send verification email: {e}")
             return False
@@ -41,26 +61,34 @@ class EmailService:
     @staticmethod
     def send_analysis_started(user, job):
         """Send email when analysis starts"""
+        if not EmailService._validate_email_config():
+            return False
+            
         try:
-            subject = f"🔍 Analysis Started - {job.project_name}"
+            subject = f"🔍 Analysis Started - BugHunter"
             
-            context = {
-                'user': user,
-                'job': job,
-                'site_url': settings.SITE_URL if hasattr(settings, 'SITE_URL') else 'http://localhost:8000'
-            }
+            message = f"""
+Hi {user.name or user.username},
+
+Your code analysis has started! We'll notify you when it's complete.
+
+Analysis Details:
+- Project: {getattr(job, 'project_name', 'Code Analysis')}
+- Started: {job.created_at.strftime('%Y-%m-%d %H:%M UTC')}
+
+You can check the status in your dashboard.
+
+Best regards,
+BugHunter Team
+"""
             
-            html_content = render_to_string('accounts/emails/analysis_started.html', context)
-            text_content = strip_tags(html_content)
-            
-            msg = EmailMultiAlternatives(
+            send_mail(
                 subject=subject,
-                body=text_content,
+                message=message,
                 from_email=settings.DEFAULT_FROM_EMAIL,
-                to=[user.email]
+                recipient_list=[user.email],
+                fail_silently=False
             )
-            msg.attach_alternative(html_content, "text/html")
-            msg.send()
             
             logger.info(f"Analysis started email sent to {user.email}")
             return True
@@ -72,27 +100,39 @@ class EmailService:
     @staticmethod
     def send_analysis_completed(user, job, results_summary):
         """Send email when analysis completes successfully"""
+        if not EmailService._validate_email_config():
+            return False
+            
         try:
-            subject = f"✅ Analysis Complete - {job.project_name}"
+            subject = f"✅ Analysis Complete - BugHunter"
             
-            context = {
-                'user': user,
-                'job': job,
-                'results_summary': results_summary,
-                'site_url': settings.SITE_URL if hasattr(settings, 'SITE_URL') else 'http://localhost:8000'
-            }
+            total_issues = results_summary.get('total_bugs', 0) + results_summary.get('total_vulnerabilities', 0)
             
-            html_content = render_to_string('accounts/emails/analysis_completed.html', context)
-            text_content = strip_tags(html_content)
+            message = f"""
+Hi {user.name or user.username},
+
+Your code analysis is complete!
+
+Results Summary:
+- Files Analyzed: {results_summary.get('total_files', 0)}
+- Issues Found: {total_issues}
+- Bugs: {results_summary.get('total_bugs', 0)}
+- Security Issues: {results_summary.get('total_vulnerabilities', 0)}
+- Code Smells: {results_summary.get('total_smells', 0)}
+
+View your detailed results in the dashboard.
+
+Best regards,
+BugHunter Team
+"""
             
-            msg = EmailMultiAlternatives(
+            send_mail(
                 subject=subject,
-                body=text_content,
+                message=message,
                 from_email=settings.DEFAULT_FROM_EMAIL,
-                to=[user.email]
+                recipient_list=[user.email],
+                fail_silently=False
             )
-            msg.attach_alternative(html_content, "text/html")
-            msg.send()
             
             logger.info(f"Analysis completed email sent to {user.email}")
             return True
@@ -104,27 +144,32 @@ class EmailService:
     @staticmethod
     def send_analysis_failed(user, job, error_message):
         """Send email when analysis fails"""
+        if not EmailService._validate_email_config():
+            return False
+            
         try:
-            subject = f"❌ Analysis Failed - {job.project_name}"
+            subject = f"❌ Analysis Failed - BugHunter"
             
-            context = {
-                'user': user,
-                'job': job,
-                'error_message': error_message,
-                'site_url': settings.SITE_URL if hasattr(settings, 'SITE_URL') else 'http://localhost:8000'
-            }
+            message = f"""
+Hi {user.name or user.username},
+
+Unfortunately, your code analysis failed to complete.
+
+Error: {error_message}
+
+Please try again or contact support if the issue persists.
+
+Best regards,
+BugHunter Team
+"""
             
-            html_content = render_to_string('accounts/emails/analysis_failed.html', context)
-            text_content = strip_tags(html_content)
-            
-            msg = EmailMultiAlternatives(
+            send_mail(
                 subject=subject,
-                body=text_content,
+                message=message,
                 from_email=settings.DEFAULT_FROM_EMAIL,
-                to=[user.email]
+                recipient_list=[user.email],
+                fail_silently=False
             )
-            msg.attach_alternative(html_content, "text/html")
-            msg.send()
             
             logger.info(f"Analysis failed email sent to {user.email}")
             return True
