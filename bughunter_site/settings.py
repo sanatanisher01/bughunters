@@ -57,19 +57,13 @@ TEMPLATES = [
 
 WSGI_APPLICATION = 'bughunter_site.wsgi.application'
 
-# Database configuration
-DATABASE_URL = os.getenv('DATABASE_URL')
-if DATABASE_URL:
-    DATABASES = {
-        'default': dj_database_url.parse(DATABASE_URL)
+# Database configuration - Force SQLite for now
+DATABASES = {
+    'default': {
+        'ENGINE': 'django.db.backends.sqlite3',
+        'NAME': BASE_DIR / 'db.sqlite3',
     }
-else:
-    DATABASES = {
-        'default': {
-            'ENGINE': 'django.db.backends.sqlite3',
-            'NAME': BASE_DIR / 'db.sqlite3',
-        }
-    }
+}
 
 AUTH_PASSWORD_VALIDATORS = [
     {
