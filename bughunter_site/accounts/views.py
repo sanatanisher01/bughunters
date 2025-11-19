@@ -307,3 +307,8 @@ def reset_password_view(request, uidb64, token):
             messages.error(request, 'Please fill in both password fields.')
     
     return render(request, 'accounts/reset_password.html', {'user': user})
+
+
+def documentation_view(request):
+    """Documentation page."""
+    return render(request, 'accounts/documentation.html')
