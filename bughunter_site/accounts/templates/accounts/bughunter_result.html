@@ -837,7 +837,7 @@ function generateFileReport(fileName, fileId) {
     doc.setTextColor(255, 255, 255);
     doc.setFontSize(24);
     doc.setFont('helvetica', 'bold');
-    doc.text('🐛 BugHunter Analysis Report', 20, 25);
+    doc.text('BugHunter Analysis Report', 20, 25);
     
     doc.setFontSize(12);
     doc.setFont('helvetica', 'normal');
@@ -867,7 +867,7 @@ function generateFileReport(fileName, fileId) {
             doc.setTextColor(...colors.primary);
             doc.setFontSize(14);
             doc.setFont('helvetica', 'bold');
-            doc.text(`${categoryIcon} ${categoryTitle.toUpperCase()} (${findings.length})`, 20, yPos + 3);
+            doc.text(`${categoryTitle.toUpperCase()} (${findings.length})`, 20, yPos + 3);
             yPos += 20;
             
             findings.forEach((finding, index) => {
@@ -876,16 +876,18 @@ function generateFileReport(fileName, fileId) {
                     yPos = 20;
                 }
                 
-                const title = finding.querySelector('.finding-title').textContent;
-                const description = finding.querySelector('.finding-description').textContent;
+                const title = finding.querySelector('.finding-title').textContent.trim();
+                const description = finding.querySelector('.finding-description').textContent.trim().replace(/\s+/g, ' ');
                 const severityElement = finding.querySelector('.severity-badge');
-                const severity = severityElement?.textContent || 'N/A';
+                const severity = severityElement?.textContent.trim() || 'N/A';
                 
                 // Finding number and title
                 doc.setTextColor(...colors.dark);
                 doc.setFontSize(12);
                 doc.setFont('helvetica', 'bold');
-                doc.text(`${index + 1}. ${title}`, 25, yPos);
+                const titleLines = doc.splitTextToSize(`${index + 1}. ${title}`, 160);
+                doc.text(titleLines, 25, yPos);
+                yPos += titleLines.length * 5 - 8;
                 yPos += 8;
                 
                 // Severity badge
@@ -948,7 +950,7 @@ function generateCompleteReport() {
     doc.setTextColor(255, 255, 255);
     doc.setFontSize(28);
     doc.setFont('helvetica', 'bold');
-    doc.text('🐛 BugHunter', 20, 25);
+    doc.text('BugHunter', 20, 25);
     
     doc.setFontSize(16);
     doc.text('Complete Analysis Report', 20, 35);
@@ -963,7 +965,7 @@ function generateCompleteReport() {
     doc.setTextColor(...colors.dark);
     doc.setFontSize(16);
     doc.setFont('helvetica', 'bold');
-    doc.text('📈 Analysis Summary', 20, yPos);
+    doc.text('Analysis Summary', 20, yPos);
     yPos += 15;
     
     const summaryCards = document.querySelectorAll('.summary-card');
@@ -1015,7 +1017,7 @@ function generateCompleteReport() {
         doc.setTextColor(255, 255, 255);
         doc.setFontSize(14);
         doc.setFont('helvetica', 'bold');
-        doc.text(`${fileIcon} ${fileName}`, 20, yPos + 5);
+        doc.text(fileName, 20, yPos + 5);
         yPos += 20;
         
         const categories = fileFindings.querySelectorAll('.finding-category');
@@ -1037,7 +1039,7 @@ function generateCompleteReport() {
                 doc.setTextColor(...colors.dark);
                 doc.setFontSize(12);
                 doc.setFont('helvetica', 'bold');
-                doc.text(`${categoryIcon} ${categoryTitle} (${findings.length})`, 25, yPos + 3);
+                doc.text(`${categoryTitle} (${findings.length})`, 25, yPos + 3);
                 yPos += 15;
                 
                 findings.forEach((finding, index) => {
@@ -1046,15 +1048,17 @@ function generateCompleteReport() {
                         yPos = 20;
                     }
                     
-                    const title = finding.querySelector('.finding-title').textContent;
-                    const description = finding.querySelector('.finding-description').textContent;
-                    const severity = finding.querySelector('.severity-badge')?.textContent || 'N/A';
+                    const title = finding.querySelector('.finding-title').textContent.trim();
+                    const description = finding.querySelector('.finding-description').textContent.trim().replace(/\s+/g, ' ');
+                    const severity = finding.querySelector('.severity-badge')?.textContent.trim() || 'N/A';
                     
                     // Finding title
                     doc.setTextColor(...colors.dark);
                     doc.setFontSize(10);
                     doc.setFont('helvetica', 'bold');
-                    doc.text(`${index + 1}. ${title}`, 30, yPos);
+                    const titleLines = doc.splitTextToSize(`${index + 1}. ${title}`, 120);
+                    doc.text(titleLines, 30, yPos);
+                    yPos += titleLines.length * 4 - 8;
                     
                     // Severity
                     const severityColor = getSeverityColor(severity.toLowerCase());
