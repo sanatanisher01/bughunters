@@ -1343,18 +1343,27 @@ function getSeverityColor(severity) {
                     <div class="security-details">
                         <h4>🔍 What Was Detected:</h4>
                         <ul class="detection-list">
-                            <li>🔑 <strong>API Keys</strong> - Service keys and authentication tokens</li>
-                            <li>📧 <strong>Email Credentials</strong> - SMTP passwords and configurations</li>
-                            <li>🗄️ <strong>Database URLs</strong> - Connection strings with embedded passwords</li>
-                            <li>🔐 <strong>Secret Keys</strong> - Application secrets and tokens</li>
+                            {% for file_path, findings in job.details.items %}
+                                {% for vuln in findings.vulnerabilities %}
+                                    {% if vuln.is_credential_exposure %}
+                                        <li>🚨 <strong>{{ vuln.type|title }}</strong> in {{ file_path }} (Line {{ vuln.line }})</li>
+                                    {% endif %}
+                                {% endfor %}
+                            {% endfor %}
                         </ul>
                         
-                        <h4>📍 Common Locations Found:</h4>
+                        <h4>📍 Files Affected:</h4>
                         <ul class="location-list">
-                            <li>📄 Configuration files (.env, settings.py)</li>
-                            <li>🧪 Test files with real credentials</li>
-                            <li>⚙️ Hardcoded fallback values</li>
-                            <li>📝 Documentation with examples</li>
+                            {% for file_path, findings in job.details.items %}
+                                {% if findings.vulnerabilities %}
+                                    {% for vuln in findings.vulnerabilities %}
+                                        {% if vuln.is_credential_exposure %}
+                                            <li>📄 {{ file_path }}</li>
+                                            {% break %}
+                                        {% endif %}
+                                    {% endfor %}
+                                {% endif %}
+                            {% endfor %}
                         </ul>
                         
                         <div class="security-warning">
