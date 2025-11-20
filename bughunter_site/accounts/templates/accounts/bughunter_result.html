@@ -1367,7 +1367,7 @@ function getSeverityColor(severity) {
         </div>
         {% endif %}
         
-        {% if job.details %}
+        {% if job.details or job.summary.total_vulnerabilities > 0 %}
         <!-- VS Code Style Results Layout -->
         <div class="results-layout">
             <!-- File Explorer -->
@@ -1428,6 +1428,15 @@ function getSeverityColor(severity) {
                     <div class="findings-container">
                         {% for file_path, findings in job.details.items %}
                         <div class="file-findings" data-file="{{ forloop.counter }}" style="{% if not forloop.first %}display: none;{% endif %}">
+                            
+                            {% if not findings.bugs and not findings.vulnerabilities and not findings.smells and not findings.best_practices %}
+                            <div class="empty-state" style="padding: var(--space-lg); text-align: center;">
+                                <div style="font-size: 2rem; margin-bottom: var(--space-md); opacity: 0.5;">✅</div>
+                                <h4 style="color: var(--success); margin-bottom: var(--space-sm);">No Issues Found</h4>
+                                <p style="color: var(--text-muted);">This file appears to be clean and well-written.</p>
+                            </div>
+                            {% endif %}
+                            
                             {% if findings.bugs %}
                             <div class="finding-category">
                                 <div class="category-header">
@@ -1657,12 +1666,12 @@ function getSeverityColor(severity) {
                 </div>
             </div>
         </div>
-        {% else %}
+        {% elif job.summary.total_files > 0 %}
         <!-- Empty State -->
         <div class="empty-state">
             <div class="empty-icon">✅</div>
-            <h3 class="empty-title">Excellent Code Quality!</h3>
-            <p class="empty-description">No significant issues were found in your code. Your project appears to be well-written and secure.</p>
+            <h3 class="empty-title">Analysis Complete!</h3>
+            <p class="empty-description">{{ job.summary.total_files }} file{{ job.summary.total_files|pluralize }} analyzed. {% if job.summary.total_vulnerabilities == 0 and job.summary.total_bugs == 0 %}No significant issues were found in your code.{% else %}Check the summary above for any issues found.{% endif %}</p>
             <div class="results-actions">
                 <a href="{% url 'bughunter' %}" class="btn btn-primary btn-large">
                     🔍 Analyze Another Project
