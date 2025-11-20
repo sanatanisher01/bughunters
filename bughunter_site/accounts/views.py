@@ -15,7 +15,7 @@ from .tokens import create_verification_token, verify_token
 from .utils import download_github_repo, extract_zip_file, collect_code_files, analyze_project, cleanup_temp_dir
 from .email_service import EmailService
 from .password_reset import PasswordResetService
-from .email_service import EmailService
+from .security_scanner import SecurityScanner
 
 
 def landing_view(request):
@@ -144,13 +144,34 @@ def bughunter_view(request):
                     
                     results = analyze_code_directly(job.code_input, job.language)
                     
+                    # Run security scan on direct code input
+                    print(f"Running security scan on direct code input...")
+                    code_files = [{'path': f'code_input.{job.language}', 'content': job.code_input}]
+                    security_findings = SecurityScanner.scan_project_files(code_files)
+                    
+                    vulnerabilities = results.get('vulnerabilities', [])
+                    
+                    # Add security findings to vulnerabilities
+                    for finding in security_findings:
+                        vulnerabilities.append({
+                            'type': finding['subcategory'],
+                            'severity': finding['severity'],
+                            'line': finding['line'],
+                            'title': finding['message'],
+                            'description': finding['description'],
+                            'recommendation': finding['recommendation'],
+                            'code_snippet': finding['code_snippet'],
+                            'is_credential_exposure': True,
+                            'credential_preview': finding.get('credential_preview')
+                        })
+                    
                     # Convert to standard format
                     summary = {
                         'total_files': 1,
                         'total_bugs': len(results.get('bugs', [])),
-                        'total_vulnerabilities': len(results.get('vulnerabilities', [])),
+                        'total_vulnerabilities': len(vulnerabilities),
                         'total_smells': len(results.get('improvements', [])),
-                        'critical_issues': sum(1 for item in results.get('bugs', []) + results.get('vulnerabilities', []) if item.get('severity') == 'critical'),
+                        'critical_issues': sum(1 for item in results.get('bugs', []) + vulnerabilities if item.get('severity') == 'critical'),
                         'analyzed_files': [{
                             'path': f'code_input.{job.language}',
                             'size': len(job.code_input),
@@ -162,7 +183,7 @@ def bughunter_view(request):
                     details = {
                         f'code_input.{job.language}': {
                             'bugs': results.get('bugs', []),
-                            'vulnerabilities': results.get('vulnerabilities', []),
+                            'vulnerabilities': vulnerabilities,
                             'smells': results.get('improvements', []),
                             'best_practices': results.get('best_practices', [])
                         }
@@ -210,8 +231,41 @@ def bughunter_view(request):
                 # Analyze project
                 results = analyze_project(code_files)
                 
+                # Run security scan for exposed credentials
+                print(f"Running security scan for exposed credentials...")
+                security_findings = SecurityScanner.scan_project_files(code_files)
+                
+                # Add security findings to results
+                if security_findings:
+                    print(f"Found {len(security_findings)} security issues (exposed credentials)")
+                    
+                    # Add to summary
+                    results['summary']['total_security_issues'] = len(security_findings)
+                    results['summary']['critical_security_issues'] = len([f for f in security_findings if f['severity'] == 'critical'])
+                    
+                    # Add to file details
+                    for finding in security_findings:
+                        file_path = finding['file']
+                        if file_path not in results['files']:
+                            results['files'][file_path] = {'bugs': [], 'vulnerabilities': [], 'smells': []}
+                        
+                        # Add as vulnerability
+                        results['files'][file_path]['vulnerabilities'].append({
+                            'type': finding['subcategory'],
+                            'severity': finding['severity'],
+                            'line': finding['line'],
+                            'message': finding['message'],
+                            'description': finding['description'],
+                            'recommendation': finding['recommendation'],
+                            'code_snippet': finding['code_snippet'],
+                            'is_credential_exposure': True
+                        })
+                
                 print("=" * 50)
-                print(f"Analysis complete! Found {results['summary']['total_bugs'] + results['summary']['total_vulnerabilities']} issues")
+                total_issues = results['summary']['total_bugs'] + results['summary']['total_vulnerabilities']
+                if security_findings:
+                    total_issues += len(security_findings)
+                print(f"Analysis complete! Found {total_issues} issues")
                 
                 # Save results
                 job.summary = results['summary']

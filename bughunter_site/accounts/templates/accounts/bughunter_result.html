@@ -421,6 +421,51 @@
     border: 1px solid var(--border-subtle);
 }
 
+/* Credential Exposure Highlighting */
+.credential-exposure {
+    background: rgba(220, 53, 69, 0.1);
+    border: 2px solid var(--danger);
+    border-radius: var(--radius-md);
+    position: relative;
+}
+
+.credential-exposure::before {
+    content: '🚨 SECURITY ALERT';
+    position: absolute;
+    top: -10px;
+    left: 10px;
+    background: var(--danger);
+    color: white;
+    padding: 2px 8px;
+    border-radius: var(--radius-sm);
+    font-size: 0.75rem;
+    font-weight: 600;
+    z-index: 1;
+}
+
+.credential-preview {
+    background: var(--bg-primary);
+    border: 1px solid var(--danger);
+    border-radius: var(--radius-sm);
+    padding: var(--space-sm);
+    margin: var(--space-sm) 0;
+    font-family: var(--font-code);
+    font-size: 0.875rem;
+    color: var(--danger);
+    word-break: break-all;
+}
+
+.credential-warning {
+    background: rgba(255, 193, 7, 0.1);
+    border: 1px solid var(--warning);
+    border-radius: var(--radius-sm);
+    padding: var(--space-sm);
+    margin: var(--space-sm) 0;
+    color: var(--warning);
+    font-size: 0.875rem;
+    font-weight: 500;
+}
+
 .finding-description {
     color: var(--text-secondary);
     font-size: 0.875rem;
@@ -1296,19 +1341,57 @@ function getSeverityColor(severity) {
                                 </div>
                                 <div class="category-content">
                                     {% for vuln in findings.vulnerabilities %}
-                                    <div class="finding-item" data-severity="{{ vuln.severity|default:'high' }}">
+                                    <div class="finding-item{% if vuln.is_credential_exposure %} credential-exposure{% endif %}" data-severity="{{ vuln.severity|default:'high' }}">
                                         <div class="finding-header">
                                             <h5 class="finding-title">{{ vuln.title }}</h5>
                                             <span class="severity-badge severity-{{ vuln.severity|default:'high' }}">{{ vuln.severity|default:'High'|upper }}</span>
                                         </div>
                                         <p class="finding-description">{{ vuln.description|safe }}</p>
+                                        
+                                        {% if vuln.is_credential_exposure %}
+                                        <div class="credential-warning">
+                                            ⚠️ <strong>Exposed Credential Detected:</strong> This appears to be sensitive information that should not be in source code.
+                                        </div>
+                                        {% if vuln.credential_preview %}
+                                        <div class="credential-preview">
+                                            <strong>Found:</strong> {{ vuln.credential_preview }}
+                                        </div>
+                                        {% endif %}
+                                        {% endif %}
+                                        
                                         {% if vuln.line_range %}
                                         <div class="finding-location">
                                             <span>📍</span>
                                             <span>Lines {{ vuln.line_range.0 }}-{{ vuln.line_range.1 }}</span>
                                         </div>
+                                        {% elif vuln.line %}
+                                        <div class="finding-location">
+                                            <span>📍</span>
+                                            <span>Line {{ vuln.line }}</span>
+                                        </div>
                                         {% endif %}
-                                        {% if vuln.suggested_fix %}
+                                        
+                                        {% if vuln.code_snippet %}
+                                        <div class="code-example">
+                                            <div class="code-header">
+                                                <h6 class="code-title">Code Context</h6>
+                                                <button class="copy-button">Copy</button>
+                                            </div>
+                                            <div class="code-content">
+                                                <pre><code>{{ vuln.code_snippet }}</code></pre>
+                                            </div>
+                                        </div>
+                                        {% endif %}
+                                        
+                                        {% if vuln.recommendation %}
+                                        <div class="finding-fix">
+                                            <div class="fix-title">
+                                                <span>🔒</span>
+                                                <span>Security Recommendation</span>
+                                            </div>
+                                            <div class="fix-description">{{ vuln.recommendation|safe }}</div>
+                                        </div>
+                                        {% elif vuln.suggested_fix %}
                                         <div class="finding-fix">
                                             <div class="fix-title">
                                                 <span>🔒</span>
@@ -1317,6 +1400,7 @@ function getSeverityColor(severity) {
                                             <div class="fix-description">{{ vuln.suggested_fix|safe }}</div>
                                         </div>
                                         {% endif %}
+                                        
                                         {% if vuln.fixed_code_example %}
                                         <div class="code-example">
                                             <div class="code-header">
