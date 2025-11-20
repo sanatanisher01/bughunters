@@ -232,34 +232,36 @@ def bughunter_view(request):
                 results = analyze_project(code_files)
                 
                 # Run security scan for exposed credentials
-                print(f"Running security scan for exposed credentials...")
-                security_findings = SecurityScanner.scan_project_files(code_files)
-                
-                # Add security findings to results
-                if security_findings:
-                    print(f"Found {len(security_findings)} security issues (exposed credentials)")
+                try:
+                    print(f"Running security scan for exposed credentials...")
+                    security_findings = SecurityScanner.scan_project_files(code_files)
                     
-                    # Add to summary
-                    results['summary']['total_security_issues'] = len(security_findings)
-                    results['summary']['critical_security_issues'] = len([f for f in security_findings if f['severity'] == 'critical'])
-                    
-                    # Add to file details
-                    for finding in security_findings:
-                        file_path = finding['file']
-                        if file_path not in results['files']:
-                            results['files'][file_path] = {'bugs': [], 'vulnerabilities': [], 'smells': []}
+                    # Add security findings to results
+                    if security_findings:
+                        print(f"Found {len(security_findings)} security issues (exposed credentials)")
                         
-                        # Add as vulnerability
-                        results['files'][file_path]['vulnerabilities'].append({
-                            'type': finding['subcategory'],
-                            'severity': finding['severity'],
-                            'line': finding['line'],
-                            'message': finding['message'],
-                            'description': finding['description'],
-                            'recommendation': finding['recommendation'],
-                            'code_snippet': finding['code_snippet'],
-                            'is_credential_exposure': True
-                        })
+                        # Add to file details
+                        for finding in security_findings:
+                            file_path = finding['file']
+                            if file_path not in results['files']:
+                                results['files'][file_path] = {'bugs': [], 'vulnerabilities': [], 'smells': []}
+                            
+                            # Add as vulnerability
+                            results['files'][file_path]['vulnerabilities'].append({
+                                'type': finding['subcategory'],
+                                'severity': finding['severity'],
+                                'line': finding['line'],
+                                'title': finding['message'],
+                                'description': finding['description'],
+                                'recommendation': finding['recommendation'],
+                                'code_snippet': finding['code_snippet'],
+                                'is_credential_exposure': True,
+                                'credential_preview': finding.get('credential_preview')
+                            })
+                    else:
+                        print("No security issues found")
+                except Exception as e:
+                    print(f"Security scan error: {e}")
                 
                 print("=" * 50)
                 total_issues = results['summary']['total_bugs'] + results['summary']['total_vulnerabilities']

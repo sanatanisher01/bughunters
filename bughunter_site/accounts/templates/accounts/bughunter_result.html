@@ -421,6 +421,108 @@
     border: 1px solid var(--border-subtle);
 }
 
+/* Security Summary Section */
+.security-summary {
+    margin-bottom: var(--space-2xl);
+}
+
+.security-alert {
+    background: rgba(220, 53, 69, 0.05);
+    border: 2px solid var(--danger);
+    border-radius: var(--radius-xl);
+    padding: var(--space-xl);
+    backdrop-filter: blur(20px);
+}
+
+.alert-header {
+    display: flex;
+    align-items: center;
+    gap: var(--space-md);
+    margin-bottom: var(--space-lg);
+    padding-bottom: var(--space-md);
+    border-bottom: 1px solid rgba(220, 53, 69, 0.2);
+}
+
+.alert-icon {
+    font-size: 2rem;
+    animation: pulse 2s infinite;
+}
+
+@keyframes pulse {
+    0%, 100% { opacity: 1; }
+    50% { opacity: 0.7; }
+}
+
+.alert-title {
+    color: var(--danger);
+    font-size: 1.5rem;
+    font-weight: 700;
+    margin: 0;
+}
+
+.security-stats {
+    display: flex;
+    gap: var(--space-xl);
+    margin-bottom: var(--space-lg);
+    justify-content: center;
+}
+
+.stat-item {
+    text-align: center;
+    padding: var(--space-md);
+    background: rgba(220, 53, 69, 0.1);
+    border-radius: var(--radius-md);
+    min-width: 120px;
+}
+
+.stat-number {
+    display: block;
+    font-size: 2rem;
+    font-weight: 700;
+    color: var(--danger);
+    margin-bottom: var(--space-xs);
+}
+
+.stat-label {
+    font-size: 0.875rem;
+    color: var(--text-muted);
+    font-weight: 500;
+}
+
+.security-details h4 {
+    color: var(--danger);
+    font-size: 1rem;
+    font-weight: 600;
+    margin: var(--space-lg) 0 var(--space-sm) 0;
+}
+
+.detection-list, .location-list {
+    list-style: none;
+    padding: 0;
+    margin: 0 0 var(--space-md) 0;
+}
+
+.detection-list li, .location-list li {
+    padding: var(--space-xs) 0;
+    color: var(--text-secondary);
+    font-size: 0.875rem;
+}
+
+.security-warning {
+    background: rgba(255, 193, 7, 0.1);
+    border: 1px solid var(--warning);
+    border-radius: var(--radius-md);
+    padding: var(--space-md);
+    margin-top: var(--space-lg);
+    display: flex;
+    align-items: center;
+    gap: var(--space-sm);
+}
+
+.warning-icon {
+    font-size: 1.25rem;
+}
+
 /* Credential Exposure Highlighting */
 .credential-exposure {
     background: rgba(220, 53, 69, 0.1);
@@ -1217,6 +1319,53 @@ function getSeverityColor(severity) {
                 </div>
             </div>
         </div>
+        
+        <!-- Security Summary Section -->
+        {% if job.summary.total_vulnerabilities > 0 %}
+        <div class="security-summary">
+            <div class="security-alert">
+                <div class="alert-header">
+                    <span class="alert-icon">🚨</span>
+                    <h3 class="alert-title">Security Scanner Results</h3>
+                </div>
+                <div class="alert-content">
+                    <div class="security-stats">
+                        <div class="stat-item">
+                            <span class="stat-number">{{ job.summary.total_vulnerabilities }}</span>
+                            <span class="stat-label">Security Issues Found</span>
+                        </div>
+                        <div class="stat-item">
+                            <span class="stat-number">{{ job.summary.critical_security_issues|default:"0" }}</span>
+                            <span class="stat-label">Critical Exposures</span>
+                        </div>
+                    </div>
+                    
+                    <div class="security-details">
+                        <h4>🔍 What Was Detected:</h4>
+                        <ul class="detection-list">
+                            <li>🔑 <strong>API Keys</strong> - Service keys and authentication tokens</li>
+                            <li>📧 <strong>Email Credentials</strong> - SMTP passwords and configurations</li>
+                            <li>🗄️ <strong>Database URLs</strong> - Connection strings with embedded passwords</li>
+                            <li>🔐 <strong>Secret Keys</strong> - Application secrets and tokens</li>
+                        </ul>
+                        
+                        <h4>📍 Common Locations Found:</h4>
+                        <ul class="location-list">
+                            <li>📄 Configuration files (.env, settings.py)</li>
+                            <li>🧪 Test files with real credentials</li>
+                            <li>⚙️ Hardcoded fallback values</li>
+                            <li>📝 Documentation with examples</li>
+                        </ul>
+                        
+                        <div class="security-warning">
+                            <span class="warning-icon">⚠️</span>
+                            <strong>Action Required:</strong> Review red-highlighted findings below and move sensitive data to environment variables.
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        {% endif %}
         
         {% if job.details %}
         <!-- VS Code Style Results Layout -->
