@@ -1345,9 +1345,7 @@ function getSeverityColor(severity) {
                         <ul class="detection-list">
                             {% for file_path, findings in job.details.items %}
                                 {% for vuln in findings.vulnerabilities %}
-                                    {% if vuln.is_credential_exposure %}
-                                        <li>🚨 <strong>{{ vuln.type|title }}</strong> in {{ file_path }} (Line {{ vuln.line }})</li>
-                                    {% endif %}
+                                    <li>🚨 <strong>{{ vuln.type|default:vuln.title|title }}</strong> in {{ file_path }} {% if vuln.line %}(Line {{ vuln.line }}){% endif %}</li>
                                 {% endfor %}
                             {% endfor %}
                         </ul>
@@ -1355,11 +1353,9 @@ function getSeverityColor(severity) {
                         <h4>📍 Files Affected:</h4>
                         <ul class="location-list">
                             {% for file_path, findings in job.details.items %}
-                                {% for vuln in findings.vulnerabilities %}
-                                    {% if vuln.is_credential_exposure and forloop.first %}
-                                        <li>📄 {{ file_path }}</li>
-                                    {% endif %}
-                                {% endfor %}
+                                {% if findings.vulnerabilities %}
+                                    <li>📄 {{ file_path }}</li>
+                                {% endif %}
                             {% endfor %}
                         </ul>
                         
